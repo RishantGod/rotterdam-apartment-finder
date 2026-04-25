@@ -1,0 +1,47 @@
+city: rotterdam
+
+price:
+  max: 600000
+  min: 0
+
+rooms:
+  min_bedrooms: 2
+
+construction:
+  min_year_built: 2005
+  include_unknown_year: true
+
+size:
+  min_living_area_m2: 0
+
+neighborhoods:
+  - centrum
+  - stadsdriehoek
+  - cool
+  - cs kwartier
+  - kop van zuid
+  - katendrecht
+  - kralingen
+  - kralingen-oost
+  - kralingen west
+  - crooswijk
+  - rubroek
+  - charlois
+  - oud charlois
+  - tarwewijk
+  - carnisse
+  - zuidplein
+  - wielewaal
+  - heijplaat
+
+scrape:
+  funda:
+    enabled: true
+    pages: 5
+  pararius:
+    enabled: true
+    pages: 3
+
+output:
+  report_path: output/report.html
+  csv_path: output/listings.csv
