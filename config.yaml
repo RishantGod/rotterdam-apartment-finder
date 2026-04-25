@@ -29,11 +29,17 @@ neighborhoods:
 scrape:
   funda:
     enabled: true
-    pages: 25
+    pages: 0     # 0 = scrape all available (capped at 50 pages = ~750 listings)
   pararius:
     enabled: true
-    pages: 10
+    pages: 0     # 0 = scrape all available (capped at 30 pages)
+    fetch_details: true   # fetch each detail page for energy label + bedrooms
+  huislijn:
+    enabled: true
+    pages: 0     # 0 = scrape all available (auto-stops when no new listings)
 
 output:
   report_path: output/report.html
-  csv_path: output/listings.csv
+  csv_path: output/listings.csv          # filtered listings only
+  all_csv_path: output/all_listings.csv  # full DB dump (every listing ever seen)
+  db_path: output/listings_db.json       # persistent DB across runs
