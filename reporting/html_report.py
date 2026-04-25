@@ -224,19 +224,31 @@ def _safe_int(v):
         return None
 
 
+def _safe_str(v) -> str:
+    """Return a clean string, treating NaN / None / empty as ''."""
+    if v is None:
+        return ""
+    if isinstance(v, float) and pd.isna(v):
+        return ""
+    s = str(v).strip()
+    if s.lower() in {"nan", "none", "null"}:
+        return ""
+    return s
+
+
 def _row_to_dict(row: pd.Series) -> Dict[str, Any]:
     return {
-        "address": row.get("address") or "",
-        "zip_code": row.get("zip_code") or "",
-        "neighborhood": row.get("neighborhood") or "",
+        "address": _safe_str(row.get("address")),
+        "zip_code": _safe_str(row.get("zip_code")),
+        "neighborhood": _safe_str(row.get("neighborhood")),
         "price": _safe_int(row.get("price")),
         "living_area_m2": _safe_int(row.get("living_area_m2")),
         "num_rooms": _safe_int(row.get("num_rooms")),
         "year_built": _safe_int(row.get("year_built")),
-        "energy_label": row.get("energy_label") or "",
-        "source": row.get("source") or "",
-        "photo_url": row.get("photo_url") or "",
-        "url": row.get("url") or "#",
+        "energy_label": _safe_str(row.get("energy_label")),
+        "source": _safe_str(row.get("source")),
+        "photo_url": _safe_str(row.get("photo_url")),
+        "url": _safe_str(row.get("url")) or "#",
     }
 
 

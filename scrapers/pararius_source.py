@@ -124,18 +124,79 @@ def _fetch_html(url: str) -> Optional[str]:
     return resp.text
 
 
+def _parse_detail_page(url: str) -> dict:
+    """Fetch a Pararius detail page and pull structured features.
+
+    The detail page exposes data via `<dt class="listing-features__term">Label</dt>
+    <dd class="listing-features__description ...">Value</dd>` pairs. The energy
+    label is encoded in the dd's class name (e.g. `--energy-label-b`).
+    """
+    out: dict = {}
+    html = _fetch_html(url)
+    if not html:
+        return out
+    soup = BeautifulSoup(html, "lxml")
+
+    for dt in soup.select("dt.listing-features__term"):
+        label = dt.get_text(strip=True)
+        dd = dt.find_next_sibling("dd")
+        if not dd:
+            continue
+        text = dd.get_text(" ", strip=True)
+        cls = " ".join(dd.get("class") or [])
+
+        if label == "Aantal slaapkamers":
+            n = _to_int(text)
+            if n is not None:
+                out["num_bedrooms"] = n
+        elif label == "Aantal kamers":
+            n = _to_int(text)
+            if n is not None:
+                out["num_rooms"] = n
+        elif label == "Bouwjaar":
+            n = _to_int(text)
+            if n is not None:
+                out["year_built"] = n
+        elif label == "Woonoppervlakte" and "num_rooms" not in out:
+            n = _to_int(text)
+            if n is not None:
+                out["living_area_m2"] = n
+        elif label == "Energielabel":
+            # Class looks like `... --energy-label-b` or `... --energy-label-a-plus-plus`.
+            m = re.search(r"--energy-label-([a-g])((?:-plus){0,4})", cls, re.IGNORECASE)
+            if m:
+                pluses = m.group(2).lower().count("plus")
+                out["energy_label"] = m.group(1).upper() + ("+" * pluses)
+            else:
+                # Fallback to the visible text (e.g. "B").
+                t = text.strip()
+                if re.fullmatch(r"[A-G][+]{0,4}", t, re.IGNORECASE):
+                    out["energy_label"] = t.upper()
+    return out
+
+
 def scrape_pararius(
     area: str,
     *,
     max_price: int = 600000,
     pages: int = 3,
-    delay_seconds: float = 1.5,
+    delay_seconds: float = 1.0,
+    fetch_details: bool = True,
 ) -> pd.DataFrame:
     """Scrape Pararius koopwoningen for the given area / max price.
 
-    Returns a DataFrame in the common listings schema.
+    When `fetch_details` is True (default) we fetch each listing's detail
+    page to fill in fields the search card doesn't expose, primarily the
+    energy label and the bedroom count. This is slower (~0.5s per
+    listing) but produces fully comparable data with Funda.
     """
-    logger.info("Scraping Pararius area=%s pages=%d max_price=%d", area, pages, max_price)
+    logger.info(
+        "Scraping Pararius area=%s pages=%d max_price=%d fetch_details=%s",
+        area,
+        pages,
+        max_price,
+        fetch_details,
+    )
 
     rows: List[dict] = []
     for page in range(1, pages + 1):
@@ -164,6 +225,21 @@ def scrape_pararius(
 
     if not rows:
         return pd.DataFrame(columns=COMMON_COLUMNS)
+
+    if fetch_details:
+        logger.info("Pararius: fetching detail pages for %d listings...", len(rows))
+        for i, row in enumerate(rows, start=1):
+            try:
+                extra = _parse_detail_page(row["url"])
+                for k, v in extra.items():
+                    # Only fill if the search-card didn't already have a value.
+                    if v is not None and (row.get(k) is None):
+                        row[k] = v
+            except Exception as exc:
+                logger.debug("Pararius detail fetch failed for %s: %s", row.get("url"), exc)
+            if i % 25 == 0:
+                logger.info("Pararius: enriched %d/%d listings...", i, len(rows))
+            time.sleep(0.4)
 
     df = pd.DataFrame(rows)
     for col in COMMON_COLUMNS:

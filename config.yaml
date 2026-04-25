@@ -8,7 +8,7 @@ rooms:
   min_bedrooms: 2
 
 construction:
-  min_year_built: 2005
+  min_year_built: 1980
   include_unknown_year: true
 
 size:
@@ -16,31 +16,23 @@ size:
 
 neighborhoods:
   - centrum
+  - central
+  - centraal
   - stadsdriehoek
   - cool
   - cs kwartier
-  - kop van zuid
-  - katendrecht
-  - kralingen
-  - kralingen-oost
-  - kralingen west
-  - crooswijk
-  - rubroek
-  - charlois
-  - oud charlois
-  - tarwewijk
-  - carnisse
-  - zuidplein
-  - wielewaal
-  - heijplaat
+  - weena
+  - oostplein
+  - blaak
+  - beurs
 
 scrape:
   funda:
     enabled: true
-    pages: 5
+    pages: 25
   pararius:
     enabled: true
-    pages: 3
+    pages: 10
 
 output:
   report_path: output/report.html
